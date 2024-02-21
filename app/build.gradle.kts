@@ -26,6 +26,14 @@ java {
    // targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+application {
+
+    // Define the main class for shadowJar task
+    val mainClassName = "com.example.CliKt"
+    // Define the main class for the application plugin
+    mainClass.set(mainClassName)
+}
+
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
@@ -48,10 +56,7 @@ dependencies {
     //implementation("ch.qos.logback:logback-classic:1.5.0")
 }
 
-application {
-    // Define the main class for the application.
-    mainClass.set("com.example.AppKt")
-}
+
 
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.

@@ -181,6 +181,7 @@ class PeekCommand : CliktCommand(name = "peek") {
 
     override fun run() {
         echo("==== ${this::class.java.name} START ... ====")
+        echo("")
 
         val startingPosition: EventPosition = ehSeekStartPositionFromCliOptions()
         var fromPosition: EventPosition = startingPosition
@@ -190,8 +191,10 @@ class PeekCommand : CliktCommand(name = "peek") {
                 listOf(ehProperties.fullyQualifiedNamespace, ehProperties.entityPath, optionPartitionId).joinToString(
                     separator = ":"
                 )
-            echo("$optionConsumerGroupName@$qName")
-            echo("poll maxMessages: $optionPollMaxMessages from partition: $optionPartitionId fromPosition: $fromPosition timeout: $optionPollMaxWaitTime ...")
+            echo("eventhub: $optionConsumerGroupName@$qName")
+            echo("=> poll maxMessages: $optionPollMaxMessages from partition: $optionPartitionId fromPosition: $fromPosition timeout: $optionPollMaxWaitTime ...")
+            echo("")
+
             val pollOutcome: EhPollOutcome = ehPoll(
                 pollFromPartitionId = this.optionPartitionId,
                 pollMaxMessages = this.optionPollMaxMessages,
@@ -207,6 +210,7 @@ class PeekCommand : CliktCommand(name = "peek") {
             pollOutcome.events.forEach(::onEventReceived)
 
             if (pollOutcome.events.isEmpty() && optionPollStopOnNoEventsReceived) {
+                echo("")
                 echo("stop polling. reason: no events received. option ${CommandOption.PollStopOnNoEventsReceived.optionName}: $optionPollStopOnNoEventsReceived")
                 break
             }
@@ -216,16 +220,19 @@ class PeekCommand : CliktCommand(name = "peek") {
                     pollOutcome
                 )
             ) {
+                echo("")
                 echo("stop polling. reason: option ${CommandOption.PollStopOnSeekEndSequenceNumber.optionName}: $optionPollStopOnSeekEndSequenceNumber")
                 break
             }
             if (shouldStopPollingByOptionSeekEndTime(optionValue = optionPollStopOnSeekEndTime, pollOutcome)) {
+                echo("")
                 echo("stop polling. reason: option ${CommandOption.PollStopOnSeekEndTime.optionName}: $optionPollStopOnSeekEndTime")
                 break
             }
 
             if (optionPollStopOnUserConfirmationPrompt) {
                 if (YesNoPrompt("Continue?", terminal).ask() == false) {
+                    echo("")
                     echo("stop polling. reason: abort by user. option ${CommandOption.PollStopOnUserConfirmationPrompt}: $optionPollStopOnUserConfirmationPrompt")
                     break
                 }
@@ -234,6 +241,7 @@ class PeekCommand : CliktCommand(name = "peek") {
 
         }
 
+        echo("")
         echo("=== ${this::class.java.name} DONE . ===")
         System.exit(0)
     }
@@ -254,7 +262,8 @@ class PeekCommand : CliktCommand(name = "peek") {
             }
         }
 
-        echo("${evt.data.sequenceNumber}/${evt.data.enqueuedTime} => ${evt.data.bodyAsString}")
+        echo("event at: ${evt.data.sequenceNumber}/${evt.data.enqueuedTime} => ${evt.data.bodyAsString}")
+        echo("")
     }
 
     private fun ehPoll(
