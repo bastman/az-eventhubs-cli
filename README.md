@@ -8,8 +8,8 @@ browse through the content of an eventhub topic ...
 
 $ make build
 
-$ java -jar app/build/libs/app-all.jar --help
-$ java -jar app/build/libs/app-all.jar peek --help
-$ java -jar app/build/libs/app-all.jar peek --connection-string="Endpoint=sb://<domain>.servicebus.windows.net/;SharedAccessKeyName=PreviewDataPolicy;SharedAccessKey=<accessKey>;EntityPath=<topic>"
+$ ./ehctl --help
+$ ./ehctl peek --help
+$ ./ehctl peek --connection-string="Endpoint=sb://<domain>.servicebus.windows.net/;SharedAccessKeyName=PreviewDataPolicy;SharedAccessKey=<accessKey>;EntityPath=<topic>"
 
 ```

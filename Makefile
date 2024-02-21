@@ -24,5 +24,5 @@ clean:
 ## build   : clean,build,fatjar
 build: clean
 	$(GRADLE_EXE) shadowJar
-	java -jar app/build/libs/app-all.jar --help
-	java -jar app/build/libs/app-all.jar peek --help
+	./ehctl --help
+	./ehctl peek --help

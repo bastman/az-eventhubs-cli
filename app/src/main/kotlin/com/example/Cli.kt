@@ -4,7 +4,7 @@ import com.example.cmd.PeekCommand
 import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.subcommands
 
-class Cli : NoOpCliktCommand(name = "eh", printHelpOnEmptyArgs = true) {
+class Cli : NoOpCliktCommand(name = "ehctl", printHelpOnEmptyArgs = true) {
     override fun run() {}
 }
 
