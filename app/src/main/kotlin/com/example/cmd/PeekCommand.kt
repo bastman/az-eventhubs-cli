@@ -24,7 +24,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-class PeekCommand : CliktCommand(name = "peek", printHelpOnEmptyArgs = true) {
+class PeekCommand : CliktCommand(name = "peek", printHelpOnEmptyArgs = false) {
     companion object : KLogging()
 
 
@@ -185,6 +185,13 @@ class PeekCommand : CliktCommand(name = "peek", printHelpOnEmptyArgs = true) {
         echo("==== ${this::class.java.name} START ... ====")
         echo("")
 
+        val qName: String =
+            listOf(ehProperties.fullyQualifiedNamespace, ehProperties.entityPath).joinToString(
+                separator = ":"
+            )
+        val partitionIds: List<String> = ehConsumer.partitionIds.toList()
+        echo("eventhub: $qName has the following partitionIds: $partitionIds")
+        echo("")
         val startingPosition: EventPosition = ehSeekStartPositionFromCliOptions()
         var fromPosition: EventPosition = startingPosition
         var doLoop = true
