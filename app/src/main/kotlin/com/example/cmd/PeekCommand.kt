@@ -9,6 +9,7 @@ import com.azure.messaging.eventhubs.models.PartitionEvent
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.terminal
+import com.github.ajalt.clikt.output.MordantHelpFormatter
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -23,7 +24,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-class PeekCommand : CliktCommand(name = "peek") {
+class PeekCommand : CliktCommand(name = "peek", printHelpOnEmptyArgs = true) {
     companion object : KLogging()
 
 
@@ -46,6 +47,7 @@ class PeekCommand : CliktCommand(name = "peek") {
     init {
         context {
             readEnvvarBeforeValueSource = false
+            helpFormatter = { MordantHelpFormatter(it, showDefaultValues = true) }
         }
     }
 

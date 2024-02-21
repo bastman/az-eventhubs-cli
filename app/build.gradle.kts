@@ -23,7 +23,7 @@ java {
         useCompileClasspathVersions()
     }
     //sourceCompatibility = JavaVersion.VERSION_1_8
-   // targetCompatibility = JavaVersion.VERSION_1_8
+    // targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 application {
@@ -47,8 +47,6 @@ dependencies {
     //implementation("com.azure:azure-sdk-bom:1.2.20")
     //implementation("com.azure:azure-messaging-eventhubs:5.18.1")
     //implementation("com.azure:azure-identity:1.11.2")
-
-
 
 
     implementation("com.github.ajalt.clikt:clikt:4.2.2")
