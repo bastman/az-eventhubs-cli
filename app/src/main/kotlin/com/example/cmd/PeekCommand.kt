@@ -26,6 +26,23 @@ import java.time.temporal.ChronoUnit
 class PeekCommand : CliktCommand(name = "peek") {
     companion object : KLogging()
 
+
+    enum class CommandOption(val optionName: String) {
+        ConnectionString("--connection-string"),
+        ConsumerGroupName("--consumer-group"),
+        PartitionId("--partitionId"),
+        SeekStartTime("--seek-start-time"),
+        SeekStartSequenceNumber("--seek-start-sequence-number"),
+        PollMaxWaitTimeInSeconds("--poll-max-wait-time-in-seconds"),
+        PollMaxMessages("--poll-max-messages"),
+        PollStopOnNoEventsReceived("--poll-stop-on-no-events-received"),
+        PollStopOnSeekEndTime("--poll-stop-on-seek-end-time"),
+        PollStopOnSeekEndSequenceNumber("--poll-stop-on-seek-end-sequence-number"),
+        PollStopOnUserConfirmationPrompt("--poll-stop-on-user-confirmation-prompt")
+        ;
+    }
+
+
     init {
         context {
             readEnvvarBeforeValueSource = false
@@ -35,38 +52,39 @@ class PeekCommand : CliktCommand(name = "peek") {
     val optionConnectionString: String by option(
         help = "az eh connectionString incl. entityPath. e.g.: Endpoint=sb://<domain>.servicebus.windows.net/;SharedAccessKeyName=PreviewDataPolicy;SharedAccessKey=<accessKey>;EntityPath=<topic>",
         envvar = "AZ_EVENTHUBS_CLI_CONNECTION_STRING",
-        names = arrayOf("--connection-string"),
+        names = arrayOf(CommandOption.ConnectionString.optionName),
     ).required()
         .validate {
             require(it.isNotBlank()) { "--connection-string must not be blank" }
-            val properties = EventHubConnectionStringProperties.parse(optionConnectionString)
+            val properties: EventHubConnectionStringProperties =
+                EventHubConnectionStringProperties.parse(optionConnectionString)
             val entityPath: String = (properties.entityPath ?: "")
             if (entityPath.isBlank()) {
-                fail("--connection-string must contain 'entityPath'")
+                fail("${CommandOption.ConnectionString.optionName} must contain 'entityPath'")
             }
         }
 
 
     val optionConsumerGroupName: String by option(
-        names = arrayOf("--consumer-group"),
-        help = "e.g. ${EventHubClientBuilder.DEFAULT_CONSUMER_GROUP_NAME} - this consumer-group does not store offsets"
+        names = arrayOf(CommandOption.ConsumerGroupName.optionName),
+        help = "e.g. ${EventHubClientBuilder.DEFAULT_CONSUMER_GROUP_NAME} - this special consumer-group does not store any offsets"
     ).default(EventHubClientBuilder.DEFAULT_CONSUMER_GROUP_NAME)
-        .validate { require(it.isNotBlank()) { "--consumer-group must not be blank" } }
+        .validate { require(it.isNotBlank()) { "${CommandOption.ConsumerGroupName.optionName} must not be blank" } }
 
     val optionPartitionId: String by option(
-        names = arrayOf("--partitionId")
+        names = arrayOf(CommandOption.PartitionId.optionName)
     ).default("0")
-        .validate { require(it.isNotBlank()) { "--partitionId must not be blank" } }
+        .validate { require(it.isNotBlank()) { "${CommandOption.PartitionId.optionName} must not be blank" } }
 
 
     val optionSeekStartTimeRaw: String? by option(
-        names = arrayOf("--seek-start-time"),
+        names = arrayOf(CommandOption.SeekStartTime.optionName),
         help = "e.g.: ${(Instant.now() - Duration.ofDays(8)).truncatedTo(ChronoUnit.SECONDS)}"
     ).validate {
         try {
             Instant.parse(it)
         } catch (e: Exception) {
-            fail("--seek-start-time must be of type Instant")
+            fail("${CommandOption.SeekStartTime.optionName} must be of type Instant")
         }
     }
 
@@ -78,38 +96,38 @@ class PeekCommand : CliktCommand(name = "peek") {
     }
 
     val optionSeekStartSequenceNumber: Long? by option(
-        names = arrayOf("--seek-start-sequence-number"),
+        names = arrayOf(CommandOption.SeekStartSequenceNumber.optionName),
         help = "aka kafka-api: 'start-offset'"
     ).long()
         .restrictTo(0..Long.MAX_VALUE)
 
     val optionPollMaxWaitTimeInSeconds: Int by option(
-        names = arrayOf("--poll-max-wait-time-in-seconds"),
+        names = arrayOf(CommandOption.PollMaxWaitTimeInSeconds.optionName),
     ).int()
         .restrictTo(1..60)
         .default(10)
     val optionPollMaxWaitTime: Duration by lazy { Duration.ofSeconds(optionPollMaxWaitTimeInSeconds.toLong()) }
 
     val optionPollMaxMessages: Int by option(
-        names = arrayOf("--poll-max-messages"),
+        names = arrayOf(CommandOption.PollMaxMessages.optionName),
     ).int()
         .restrictTo(1..100)
         .default(2)
 
     val optionPollStopOnNoEventsReceived: Boolean by option(
-        names = arrayOf("--poll-stop-on-no-events-received"),
+        names = arrayOf(CommandOption.PollStopOnNoEventsReceived.optionName),
     )
         .boolean()
         .default(true)
 
     val optionPollStopOnSeekEndTimeRaw: String? by option(
-        names = arrayOf("--poll-stop-on-seek-end-time"),
+        names = arrayOf(CommandOption.PollStopOnSeekEndTime.optionName),
         help = "e.g.: ${(Instant.now()).truncatedTo(ChronoUnit.SECONDS)}"
     ).validate {
         try {
             Instant.parse(it)
         } catch (e: Exception) {
-            fail("--poll-stop-on-seek-end-time must be of type Instant")
+            fail("${CommandOption.PollStopOnSeekEndTime.optionName} must be of type Instant")
         }
     }
 
@@ -121,13 +139,13 @@ class PeekCommand : CliktCommand(name = "peek") {
     }
 
     val optionPollStopOnSeekEndSequenceNumber: Long? by option(
-        names = arrayOf("--poll-stop-on-seek-end-sequence-number"),
+        names = arrayOf(CommandOption.PollStopOnSeekEndSequenceNumber.optionName),
         help = "aka kafka-api: 'end-offset'"
     ).long()
         .restrictTo(0..Long.MAX_VALUE)
 
     val optionPollStopOnUserConfirmationPrompt: Boolean by option(
-        names = arrayOf("--poll-stop-on-user-confirmation-prompt"),
+        names = arrayOf(CommandOption.PollStopOnUserConfirmationPrompt.optionName),
     )
         .boolean()
         .default(true)
@@ -168,6 +186,11 @@ class PeekCommand : CliktCommand(name = "peek") {
         var fromPosition: EventPosition = startingPosition
         var doLoop = true
         while (doLoop) {
+            val qName: String =
+                listOf(ehProperties.fullyQualifiedNamespace, ehProperties.entityPath, optionPartitionId).joinToString(
+                    separator = ":"
+                )
+            echo("$optionConsumerGroupName@$qName")
             echo("poll maxMessages: $optionPollMaxMessages from partition: $optionPartitionId fromPosition: $fromPosition timeout: $optionPollMaxWaitTime ...")
             val pollOutcome: EhPollOutcome = ehPoll(
                 pollFromPartitionId = this.optionPartitionId,
@@ -184,7 +207,7 @@ class PeekCommand : CliktCommand(name = "peek") {
             pollOutcome.events.forEach(::onEventReceived)
 
             if (pollOutcome.events.isEmpty() && optionPollStopOnNoEventsReceived) {
-                echo("stop polling. reason: no events received. option --poll-stop-on-no-events-received: $optionPollStopOnNoEventsReceived")
+                echo("stop polling. reason: no events received. option ${CommandOption.PollStopOnNoEventsReceived.optionName}: $optionPollStopOnNoEventsReceived")
                 break
             }
 
@@ -193,17 +216,17 @@ class PeekCommand : CliktCommand(name = "peek") {
                     pollOutcome
                 )
             ) {
-                echo("stop polling. reason: option --poll-stop-on-seek-end-sequence-number: $optionPollStopOnSeekEndSequenceNumber")
+                echo("stop polling. reason: option ${CommandOption.PollStopOnSeekEndSequenceNumber.optionName}: $optionPollStopOnSeekEndSequenceNumber")
                 break
             }
             if (shouldStopPollingByOptionSeekEndTime(optionValue = optionPollStopOnSeekEndTime, pollOutcome)) {
-                echo("stop polling. reason: option --poll-stop-on-seek-end-time: $optionPollStopOnSeekEndTime")
+                echo("stop polling. reason: option ${CommandOption.PollStopOnSeekEndTime.optionName}: $optionPollStopOnSeekEndTime")
                 break
             }
 
             if (optionPollStopOnUserConfirmationPrompt) {
                 if (YesNoPrompt("Continue?", terminal).ask() == false) {
-                    echo("stop polling. reason: abort by user. option --poll-stop-on-user-confirmation-prompt $optionPollStopOnUserConfirmationPrompt")
+                    echo("stop polling. reason: abort by user. option ${CommandOption.PollStopOnUserConfirmationPrompt}: $optionPollStopOnUserConfirmationPrompt")
                     break
                 }
             }
