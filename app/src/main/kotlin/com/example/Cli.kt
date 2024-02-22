@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.cmd.PeekCommand
+import com.example.cmd.peek.PeekCommand
 import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.subcommands
 

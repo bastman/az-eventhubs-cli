@@ -1,4 +1,4 @@
-package com.example.cmd
+package com.example.cmd.peek
 
 import com.azure.core.credential.AzureNamedKeyCredential
 import com.azure.messaging.eventhubs.EventHubClientBuilder
@@ -24,7 +24,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-class PeekCommand : CliktCommand(name = "peek", printHelpOnEmptyArgs = false) {
+class PeekCommand() : CliktCommand(name = "peek", printHelpOnEmptyArgs = false) {
     companion object : KLogging()
 
 
@@ -50,6 +50,8 @@ class PeekCommand : CliktCommand(name = "peek", printHelpOnEmptyArgs = false) {
             helpFormatter = { MordantHelpFormatter(it, showDefaultValues = true) }
         }
     }
+
+    private val ehPartitionEventHandler: EhPartitionEventHandler by lazy { EhPartitionEventHandler(cmd = this) }
 
     val optionConnectionString: String by option(
         help = "az eh connectionString incl. entityPath. e.g.: Endpoint=sb://<domain>.servicebus.windows.net/;SharedAccessKeyName=PreviewDataPolicy;SharedAccessKey=<accessKey>;EntityPath=<topic>",
@@ -271,8 +273,7 @@ class PeekCommand : CliktCommand(name = "peek", printHelpOnEmptyArgs = false) {
             }
         }
 
-        echo("event at: ${evt.data.sequenceNumber}/${evt.data.enqueuedTime} => ${evt.data.bodyAsString}")
-        echo("")
+        ehPartitionEventHandler.handleEvent(evt = evt)
     }
 
     private fun ehPoll(
@@ -316,21 +317,22 @@ class PeekCommand : CliktCommand(name = "peek", printHelpOnEmptyArgs = false) {
         return pollOutcomeValue >= optionValue
     }
 
+    data class EhPollOutcome(
+        // input
+        val partitionId: String,
+        val pollFromPosition: EventPosition,
+        val pollMaxMessages: Int,
+        val pollMaxWaitTime: Duration,
+        // output
+        val events: List<PartitionEvent>
+    ) {
+        val lastEvent: PartitionEvent? = events.lastOrNull()
+        val lastEventSequenceNumber: Long? = lastEvent?.data?.sequenceNumber
+        val lastEventEnqueuedTime: Instant? = lastEvent?.data?.enqueuedTime
+    }
 
 }
 
-data class EhPollOutcome(
-    // input
-    val partitionId: String,
-    val pollFromPosition: EventPosition,
-    val pollMaxMessages: Int,
-    val pollMaxWaitTime: Duration,
-    // output
-    val events: List<PartitionEvent>
-) {
-    val lastEvent: PartitionEvent? = events.lastOrNull()
-    val lastEventSequenceNumber: Long? = lastEvent?.data?.sequenceNumber
-    val lastEventEnqueuedTime: Instant? = lastEvent?.data?.enqueuedTime
-}
+
 
 
